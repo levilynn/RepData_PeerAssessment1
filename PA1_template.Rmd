@@ -1,25 +1,101 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: ''
+output: html_document
 ---
+#Reproducible Research Course Project 1
+*levie*  
+*Jan 23rd,2016*
 
+It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the ¡°quantified self¡± movement ¨C a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
 
-## Loading and preprocessing the data
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
 
+##Set the system language and working directory
+```{r}
+Sys.setlocale("LC_TIME", "English") 
+getwd()
+setwd("D:/0 Data Science/5 Reproducible Research/Project")
+if(!file.exists("data")){
+        dir.create("data")
+}
+setwd("./data")
+```
 
+##Download,read and look at the Data
+```{r}
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip", 
+              destfile="activity.zip")
+unzip("activity.zip")
+activity<-read.csv("activity.csv")
+str(activity)
+head(activity)
+tail(activity)
+```
 
-## What is mean total number of steps taken per day?
+##Histogram of the total number of steps taken each day
+```{r}
+date.activity <- aggregate(steps~date, activity, sum)
+hist(date.activity$steps,xlab = "Number of steps each day",
+     ylab = "Frequency(days)",main="Total number of steps taken each day")
+```
 
+##Calculate the mean and median number of steps taken each day
+```{r}
+mean(date.activity$steps, na.rm = TRUE)
+median(date.activity$steps, na.rm = TRUE)
+```
 
+##Time series plot of the average number of steps taken each day
+```{r}
+interval.activity <- aggregate(steps~interval, activity, mean)
+plot(interval.activity, type = "l", xlab = "Interval(5 mins)", 
+        ylab = "Average Number of Steps", main = "Average Number of Steps each 5 minutes")
+```
 
-## What is the average daily activity pattern?
+##Find the 5-minute interval that, on average, contains the maximum number of steps
+```{r}
+interval.activity$interval[which.max(interval.activity$steps)]
+```
 
+##Imputing missing data.find NAs and replace them by the average number of steps
+```{r}
+sum(is.na(activity$steps))
+new.activity<-merge(activity,interval.activity,by="interval")
+new.activity$steps.x[is.na(new.activity$steps.x)]<-new.activity$steps.y[is.na(new.activity$steps.x)]
+```
 
+##Histogram of the total number of steps taken each day after missing values are imputed
+```{r}
+newAgg.activity <- aggregate(steps.x~date, new.activity, sum)
+hist(newAgg.activity$steps,xlab = "Number of steps each day",
+     ylab = "Frequency(days)",main="Total number of steps taken each day")
+mean(newAgg.activity$steps.x, na.rm = TRUE)
+median(newAgg.activity$steps.x, na.rm = TRUE)
+```
+You can find that the imputing changes mean median a little, and make the mean and median equal.
 
-## Imputing missing values
+##Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+```{r}
+datetype <- function(date) {
+        if (weekdays(as.Date(date)) %in% c("Saturday", "Sunday")) {
+                "weekends"
+        } else {
+                "weekdays"
+        }
+}
+new.activity$day <- as.factor(sapply(new.activity$date, datetype))
+str(new.activity)
+newDate.activity <- aggregate(steps.x ~ interval + day, new.activity, mean)
+library(lattice)
+xyplot(
+        steps.x ~ interval | factor(day), data = newDate.activity, 
+        aspect = 1/2, type = "l",ylab = "Number of Steps",
+        main="Steps taken per 5-minute interval across weekdays and weekends"
+)
+```
 
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+##My software environment
+```{r}
+sessionInfo()
+```
